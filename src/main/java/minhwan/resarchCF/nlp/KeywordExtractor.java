@@ -5,8 +5,8 @@ package minhwan.resarchCF.nlp;
 
 import java.util.ArrayList;
 
-import minhwan.resarchCF.sampler.DataLoader;
-import minhwan.resarchCF.sampler.SamplingModel;
+import minhwan.researchCF.sampler.LocalSampler;
+import minhwan.researchCF.sampler.model.LocalDataModel;
 
 /**
  * @author yuminhwan
@@ -15,12 +15,12 @@ import minhwan.resarchCF.sampler.SamplingModel;
  * @fileName KeywordExtractor.java
  */
 public class KeywordExtractor {
-	DataLoader dataloader;
-	ArrayList<SamplingModel> data;
+	LocalSampler dataloader;
+	ArrayList<LocalDataModel> data;
 	
 	public KeywordExtractor(){
-		dataloader = new DataLoader();
-		data = new ArrayList<SamplingModel>();
+//		dataloader = new LocalSampler();
+//		data = new ArrayList<LocalDataModel>();
 	}
 	
 }

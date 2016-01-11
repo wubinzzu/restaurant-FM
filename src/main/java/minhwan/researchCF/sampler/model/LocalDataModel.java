@@ -1,7 +1,7 @@
 /**
  * 
  */
-package minhwan.resarchCF.sampler;
+package minhwan.researchCF.sampler.model;
 
 import java.util.ArrayList;
 
@@ -13,7 +13,7 @@ import org.bson.Document;
  * @createDate 2016. 1. 7.
  * @fileName DataModel.java
  */
-public class SamplingModel {
+public class LocalDataModel {
 	Document object;
 	ArrayList<Document> reviews;
 	
@@ -21,8 +21,8 @@ public class SamplingModel {
 	/**
 	 * @param object
 	 * @param reviews
-	 */
-	public SamplingModel(Document object, ArrayList<Document> reviews) {
+	 */	
+	public LocalDataModel(Document object, ArrayList<Document> reviews) {
 		super();
 		this.object = object;
 		this.reviews = reviews;

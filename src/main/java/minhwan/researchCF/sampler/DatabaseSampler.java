@@ -1,7 +1,7 @@
 /**
  * 
  */
-package minhwan.resarchCF.sampler;
+package minhwan.researchCF.sampler;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -15,6 +15,7 @@ import com.mongodb.Block;
 import com.mongodb.client.FindIterable;
 
 import minhwan.util.IO.FileIOWriter;
+import minhwan.util.IO.FileSystem;
 import minhwan.util.database.mongodb.MongoDB;
 import minhwan.util.database.mongodb.MongoDBType;
 
@@ -24,8 +25,8 @@ import minhwan.util.database.mongodb.MongoDBType;
  * @createDate 2016. 1. 7.
  * @fileName Sampler.java
  */
-public class Sampler {
-	static Logger logger = Logger.getLogger(Sampler.class.getName()); 
+public class DatabaseSampler {
+	static Logger logger = Logger.getLogger(DatabaseSampler.class.getName()); 
 
 	public static String ROOT_DIR = "D:\\Research\\FM\\data\\sanf\\";
 	
@@ -35,7 +36,7 @@ public class Sampler {
 	HashSet<String> objectKeys;
 	HashMap<String, Integer> reviewCnts;
 	
-	public Sampler(){
+	public DatabaseSampler(){
 		restDB = new MongoDB(MongoDBType.Yelp_Restaurant);
 		reviewDB = new MongoDB(MongoDBType.Yelp_Review);
 	}
@@ -80,7 +81,7 @@ public class Sampler {
 	
 	private void reviewFetch(Document restaurant) throws IOException{
 		final String sourceKey = restaurant.getString("sourceKey");
-		System.out.println(sourceKey);
+//		System.out.println(sourceKey);
 		
 		final StringBuffer sb = new StringBuffer();
 		sb.append(restaurant.toJson()).append("\n");
@@ -94,13 +95,15 @@ public class Sampler {
 		});
 		
 		// write data
-		FileIOWriter fiw = new FileIOWriter(ROOT_DIR + sourceKey + ".dat", false);
+		String filePath = ROOT_DIR + sourceKey + ".dat";
+		FileSystem.mkdir_path(filePath);
+		FileIOWriter fiw = new FileIOWriter(filePath, false);
 		fiw.write(sb.toString());
 		fiw.close();
 	}
 	
 	public static void main(String[] args) throws IOException{
-		Sampler sampler = new Sampler();
+		DatabaseSampler sampler = new DatabaseSampler();
 		sampler.sampling();
 	}
 }
