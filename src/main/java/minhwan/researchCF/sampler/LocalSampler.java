@@ -12,7 +12,7 @@ import org.bson.Document;
 
 import minhwan.researchCF.sampler.filters.restaurant.ObjectReviewCountFilter;
 import minhwan.researchCF.sampler.filters.user.UserReviewCountFilter;
-import minhwan.researchCF.sampler.model.LocalDataModel;
+import minhwan.researchCF.sampler.model.DatabaseDataModel;
 import minhwan.util.IO.FileIO;
 import minhwan.util.IO.FileIOWriter;
 import minhwan.util.IO.FileSystem;
@@ -26,20 +26,28 @@ import minhwan.util.IO.FileSystem;
 public class LocalSampler{
 	private static Logger logger = Logger.getLogger(LocalSampler.class.getName());
 	
+	private String rootDir;
 	private String objectDir;
 	private String userDir;
 	
 	private boolean userLevelSampling;
-	private UserReviewDatabase userReviewDB;
 
 	private ArrayList<SamplingFilter> objectFilters;
 	private ArrayList<SamplingFilter> userFilters;
+	
+	private HashMap<String, ArrayList<Document>> reviewBuff;
+	
+	private int reviewBuffSize = 100000;
+	private int reivewBuffTmpNum = 1;
+	private int samplingCnt = 0;
 		
 	public LocalSampler(boolean userLevelSampling){
 		this.userLevelSampling = userLevelSampling;
 
 		objectFilters = new ArrayList<SamplingFilter>();
 		userFilters = new ArrayList<SamplingFilter>();
+		
+		reviewBuff = new HashMap<String, ArrayList<Document>>();
 	}	
 	
 	/* managing filter */
@@ -52,7 +60,7 @@ public class LocalSampler{
 		userFilters.add(filter);
 	}
 	
-	/* executing methods */	
+	/* executing methods */
 	public void sampling(String rootDir) throws IOException {
 		logger.info("Sampling Start.... <<<<---- " + rootDir);
 		
@@ -60,51 +68,52 @@ public class LocalSampler{
 				FileSystem.readFileList(rootDir + "./all/");
 		
 		// create sampling result directory
+		this.rootDir = rootDir;
 		this.objectDir = rootDir + "/sampling/objects/";
 		this.userDir = rootDir + "/sampling/users/";
 		
 		FileSystem.mkdir_path(objectDir);
-		if(userLevelSampling)
-			FileSystem.mkdir_path(userDir);
 		
 		// iteratively sampling file
 		for(String filePath : filePaths){
-			LocalDataModel ldm = data2model(filePath);
+			DatabaseDataModel ldm = data2model(filePath);
 			
 			if(objectFiltering(ldm))	writeSamplingResult(ldm );
+			
+			if(samplingCnt++ % 100 == 0)
+				System.out.printf("%d/%d %s\n", samplingCnt, filePaths.size(), filePath);
 		}
 		
 		if(userLevelSampling){
-			
+			samplingUser();
 		}
 	}
 	
-	public static LocalDataModel data2model(String filePath){
+	public static DatabaseDataModel data2model(String filePath){
 		try {
-			String[] lines = FileIO.readEachLine(filePath);
+			ArrayList<String> lines = FileIO.readEachLine(filePath);
 			
 			Document objectData = null;
 			ArrayList<Document> reviewData = new ArrayList<Document>();
 			
-			for(int i = 0; i < lines.length;  i++){
+			for(int i = 0; i < lines.size();  i++){
 				if(i == 0)
-					objectData = Document.parse(lines[i]);
+					objectData = Document.parse(lines.get(i));
 				else
-					reviewData.add(Document.parse(lines[i]));
+					reviewData.add(Document.parse(lines.get(i)));
 			}
 			
-			return new LocalDataModel(objectData, reviewData);
+			return new DatabaseDataModel(objectData, reviewData);
 		} catch (IOException e) {
-			// TODO Auto-generated catch block
 			e.printStackTrace();
 			return null;
 		}
 	}
 	
-	/* Writers */
-	private void writeSamplingResult(LocalDataModel ldm) throws IOException{
+	/* Object Writers */
+	private void writeSamplingResult(DatabaseDataModel ldm) throws IOException{
 		String sourceKey = ldm.getObject().getString("sourceKey");
-
+		
 		FileIOWriter writer;
 		writer = new FileIOWriter(this.objectDir + sourceKey + ".json", false);
 		Document result = ldm.getObject();
@@ -115,39 +124,113 @@ public class LocalSampler{
 		writer.close();
 		
 		// collect review for each user(reviewerID)
-		if(userLevelSampling){
-			if(userReviewDB == null) userReviewDB = new UserReviewDatabase();
+		if(userLevelSampling)
+			handleUserBuff(ldm);
+	}
+	
+	/* User/Review Buff */
+	private void handleUserBuff(DatabaseDataModel ldm) throws IOException{
+		if(reviewBuff.size() > reviewBuffSize)
+			writeUserBuff();
+		
+		for(Document review : ldm.getReviews()){
+			String reviewerID = review.getString("reviewerID");
 			
-			for(Document review : ldm.getReviews())
-				userReviewDB.addUserReview(review);
+			if(!reviewBuff.containsKey(reviewerID))
+				reviewBuff.put(reviewerID, new ArrayList<Document>());
+			
+			review.remove("_id");
+			review.remove("reviewerID");
+			review.remove("reviewID");
+			reviewBuff.get(reviewerID).add(review);
 		}
 	}
 	
-	private void writeUserSamplingResult() throws IOException{
-		HashMap<String, ArrayList<Document>> userReviews =
-				userReviewDB.getUserReviews();
+	/* User/Review Buff Writer */
+	private void writeUserBuff() throws IOException{
+		FileIOWriter writer;
+		
+		logger.info("reviewBuff is over " + reviewBuffSize + ", therefore writing buff data\t\t"
+				+ "currSamplingCnt: " + samplingCnt);
 
-		logger.info("Sampling Users .... <<<<---- " + userReviews.size());
+		StringBuffer sb = new StringBuffer();
+		
+		for(String reviewerID : reviewBuff.keySet()){
+			sb.append("#").append(reviewerID).append("\n");
+			for(Document review : reviewBuff.get(reviewerID))
+				sb.append(review.toJson()).append("\n");
+		}
+		
+		sb.append("#");
 
-		for(String reviewerID : userReviews.keySet()){
-			ArrayList<Document> reviews = userReviews.get(reviewerID);
+		String targetPath = this.rootDir + "tmp/" + reivewBuffTmpNum + ".txt";
+		FileSystem.mkdir_path(targetPath);
+		
+		writer = new FileIOWriter(targetPath, true);
+		writer.write(sb.toString());
+		writer.close();
+
+		reivewBuffTmpNum++;
+		reviewBuff.clear();
+		reviewBuff = new HashMap<String, ArrayList<Document>>();
+	}
+	
+	/* User/Review Sampling */
+	public void samplingUser(String rootDir) throws IOException{
+		this.rootDir = rootDir;
+		samplingUser();
+	}
+	
+	public void samplingUser() throws IOException{
+		FileSystem.mkdir_path(this.userDir);
+		
+		for(String userReviewPath : FileSystem.readFileList(rootDir + "tmp")){
+			logger.info("user Sampling : " + userReviewPath);
 			
-			LocalDataModel reviewD = new LocalDataModel(reviews.get(0), reviews);
+			ArrayList<String> lines = FileIO.readEachLine(userReviewPath);
 			
-			if(userFiltering(reviewD)){
-				FileIOWriter writer;
-				writer = new FileIOWriter(this.userDir + reviewerID + ".json", true);
+			ArrayList<Document> reviewDocs = new ArrayList<Document>();
+			String reviewerID = null;
+			
+			for(int i = 0; i< lines.size(); i++){
+				String line = lines.get(i);
 				
-				for(Document review: reviews)
-					writer.write(review.toJson());
-				
-				writer.close();
+				// new user or the end of file
+				if(line.startsWith("#") || i == lines.size() - 1){
+					if(reviewDocs.size() > 0){
+						DatabaseDataModel userReviewData = new DatabaseDataModel(reviewDocs.get(0), reviewDocs);
+						if(userFiltering(userReviewData)){
+							writeUserSamplingResult(reviewDocs, reviewerID);
+						}
+						reviewDocs.clear();
+					}
+					
+					reviewerID = line.substring(1);
+				}
+				// common review line
+				else{
+					reviewDocs.add(Document.parse(line));
+				}	
 			}
 		}
 	}
 	
+	private void writeUserSamplingResult(ArrayList<Document> reviewDocs, String reviewerID) throws IOException{
+		if(reviewDocs == null) return;
+		if(reviewDocs.size() == 0) return;
+		
+		String targetFilePath = this.userDir + reviewerID + ".json";
+		FileIOWriter writer = new FileIOWriter(targetFilePath, true);
+		
+		for(Document review : reviewDocs){
+			writer.write(review.toJson());
+		}
+		
+		writer.close();
+	}
+	
 	/* ************************* */
-	private boolean objectFiltering(LocalDataModel ldm){
+	private boolean objectFiltering(DatabaseDataModel ldm){
 		if(ldm == null) return false;
 		
 		for(SamplingFilter filter : objectFilters){
@@ -157,7 +240,7 @@ public class LocalSampler{
 		return true;
 	}
 	
-	private boolean userFiltering(LocalDataModel ldm){
+	private boolean userFiltering(DatabaseDataModel ldm){
 		if(ldm == null) return false;
 		
 		for(SamplingFilter filter : userFilters){
@@ -179,5 +262,6 @@ public class LocalSampler{
 		ls.addUserFilter(new UserReviewCountFilter(5, Integer.MAX_VALUE));
 		
 		ls.sampling(rootDir);
+//		ls.samplingUser("D:/Research/FM/data/sanf/sampling/users/");
 	}
 }

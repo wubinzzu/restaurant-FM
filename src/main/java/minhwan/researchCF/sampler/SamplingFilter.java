@@ -3,7 +3,7 @@
  */
 package minhwan.researchCF.sampler;
 
-import minhwan.researchCF.sampler.model.LocalDataModel;
+import minhwan.researchCF.sampler.model.DatabaseDataModel;
 
 /**
  * @author yuminhwan
@@ -13,5 +13,5 @@ import minhwan.researchCF.sampler.model.LocalDataModel;
  */
 public interface SamplingFilter {
 	
-	public boolean filter(LocalDataModel sm);
+	public boolean filter(DatabaseDataModel sm);
 }

@@ -4,7 +4,7 @@
 package minhwan.researchCF.sampler.filters.user;
 
 import minhwan.researchCF.sampler.SamplingFilter;
-import minhwan.researchCF.sampler.model.LocalDataModel;
+import minhwan.researchCF.sampler.model.DatabaseDataModel;
 
 /**
  * @author yuminhwan
@@ -23,7 +23,7 @@ public class UserReviewCountFilter implements SamplingFilter{
 	/* (non-Javadoc)
 	 * @see minhwan.researchCF.sampler.SamplingFilter#filter(minhwan.researchCF.sampler.model.LocalDataModel)
 	 */
-	public boolean filter(LocalDataModel sm) {
+	public boolean filter(DatabaseDataModel sm) {
 		return (sm.getReviews().size() >= min &&
 				sm.getReviews().size() <= max);
 	}

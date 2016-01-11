@@ -8,7 +8,7 @@ import java.util.ArrayList;
 import org.bson.Document;
 
 import minhwan.researchCF.sampler.SamplingFilter;
-import minhwan.researchCF.sampler.model.LocalDataModel;
+import minhwan.researchCF.sampler.model.DatabaseDataModel;
 
 /**
  * @author yuminhwan
@@ -24,7 +24,7 @@ public class ObjectReviewCountFilter implements SamplingFilter{
 		this.max = max;
 	}
 	
-	public boolean filter(LocalDataModel sm) {
+	public boolean filter(DatabaseDataModel sm) {
 		ArrayList<Document> reviews = sm.getReviews();
 
 		return (reviews.size() >= min &&

@@ -10,7 +10,7 @@ import org.junit.Before;
 import org.junit.Test;
 
 import minhwan.researchCF.sampler.filters.restaurant.ObjectReviewCountFilter;
-import minhwan.researchCF.sampler.model.LocalDataModel;
+import minhwan.researchCF.sampler.model.DatabaseDataModel;
 import minhwan.util.IO.FileSystem;
 
 /**
@@ -36,7 +36,7 @@ public class LocalSamplerTest {
 				FileSystem.readFileList("D:/Research/FM/data/sanf");
 		
 		for(int i = 0; i < filePaths.size(); i++){
-			LocalDataModel sm = LocalSampler.data2model(filePaths.get(i));
+			DatabaseDataModel sm = LocalSampler.data2model(filePaths.get(i));
 			System.out.println(sm);
 			
 			if(i == 3)

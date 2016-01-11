@@ -8,7 +8,7 @@ import org.junit.Test;
 
 import minhwan.researchCF.sampler.LocalSampler;
 import minhwan.researchCF.sampler.filters.restaurant.ObjectReviewCountFilter;
-import minhwan.researchCF.sampler.model.LocalDataModel;
+import minhwan.researchCF.sampler.model.DatabaseDataModel;
 
 /**
  * @author yuminhwan
@@ -19,7 +19,7 @@ import minhwan.researchCF.sampler.model.LocalDataModel;
 public class SamplingFilterTest {
 
 	String filePath = "D:/Research/FM/data/sanf/2nd-sunday-san-francisco.dat";
-	LocalDataModel ldm;
+	DatabaseDataModel ldm;
 	
 	@Before
 	public void setup(){

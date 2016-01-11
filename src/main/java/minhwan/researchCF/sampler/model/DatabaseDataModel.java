@@ -13,7 +13,7 @@ import org.bson.Document;
  * @createDate 2016. 1. 7.
  * @fileName DataModel.java
  */
-public class LocalDataModel {
+public class DatabaseDataModel {
 	Document object;
 	ArrayList<Document> reviews;
 	
@@ -22,7 +22,7 @@ public class LocalDataModel {
 	 * @param object
 	 * @param reviews
 	 */	
-	public LocalDataModel(Document object, ArrayList<Document> reviews) {
+	public DatabaseDataModel(Document object, ArrayList<Document> reviews) {
 		super();
 		this.object = object;
 		this.reviews = reviews;
