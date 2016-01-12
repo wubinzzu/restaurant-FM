@@ -27,7 +27,7 @@ public class LocalSamplerTest {
 	
 	@Before
 	public void setup(){
-		ls = new LocalSampler(false);
+		ls = new LocalSampler(true);
 	}
 	
 //	@Test
@@ -39,13 +39,13 @@ public class LocalSamplerTest {
 			DatabaseDataModel sm = LocalSampler.data2model(filePaths.get(i));
 			System.out.println(sm);
 			
-			if(i == 3)
+			if(i == 0)
 				break;
 		}
 	}
 	
 	@Test
-	public void samplingTest() throws IOException{
+	public void samplingFilterTest() throws IOException{
 		ls.addObjectFilter(new ObjectReviewCountFilter(5, Integer.MAX_VALUE));
 		ls.sampling(rootDir);
 	}

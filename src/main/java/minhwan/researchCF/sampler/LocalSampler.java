@@ -30,6 +30,8 @@ public class LocalSampler{
 	private String objectDir;
 	private String userDir;
 	
+	private FileIOWriter userReviewListWriter;
+	
 	private boolean userLevelSampling;
 
 	private ArrayList<SamplingFilter> objectFilters;
@@ -38,7 +40,6 @@ public class LocalSampler{
 	private HashMap<String, ArrayList<Document>> reviewBuff;
 	
 	private int reviewBuffSize = 100000;
-	private int reivewBuffTmpNum = 1;
 	private int samplingCnt = 0;
 		
 	public LocalSampler(boolean userLevelSampling){
@@ -52,17 +53,17 @@ public class LocalSampler{
 	
 	/* managing filter */
 	public void addObjectFilter(SamplingFilter filter){
-		logger.info("add object sampling-filter: " + filter.getClass().getName());
+		System.out.println("[LOAD] add object sampling-filter: " + filter.getClass().getName());
 		objectFilters.add(filter);
 	}
 	public void addUserFilter(SamplingFilter filter){
-		logger.info("add user sampling-filter: " + filter.getClass().getName());
+		System.out.println("[LOAD] user sampling-filter: " + filter.getClass().getName());
 		userFilters.add(filter);
 	}
 	
 	/* executing methods */
 	public void sampling(String rootDir) throws IOException {
-		logger.info("Sampling Start.... <<<<---- " + rootDir);
+		System.out.println("[INFO] Sampling Start... <<<--- " + rootDir);
 		
 		ArrayList<String> filePaths = 
 				FileSystem.readFileList(rootDir + "./all/");
@@ -72,6 +73,9 @@ public class LocalSampler{
 		this.objectDir = rootDir + "/sampling/objects/";
 		this.userDir = rootDir + "/sampling/users/";
 		
+		FileSystem.mkdir_path(rootDir + "/sampling/mapper.dat");
+		this.userReviewListWriter = new FileIOWriter(rootDir + "/sampling/userList.dat", true);
+		
 		FileSystem.mkdir_path(objectDir);
 		
 		// iteratively sampling file
@@ -80,13 +84,18 @@ public class LocalSampler{
 			
 			if(objectFiltering(ldm))	writeSamplingResult(ldm );
 			
-			if(samplingCnt++ % 100 == 0)
-				System.out.printf("%d/%d %s\n", samplingCnt, filePaths.size(), filePath);
+			if(samplingCnt++ % 1000 == 0)
+				System.out.printf("[INFO] %d/%d %s\n", samplingCnt, filePaths.size(), filePath);
 		}
 		
+		writeUserBuff();
+		
+		System.out.println("[INFO] sampling user data");
 		if(userLevelSampling){
 			samplingUser();
 		}
+		
+		userReviewListWriter.close();
 	}
 	
 	public static DatabaseDataModel data2model(String filePath){
@@ -115,15 +124,16 @@ public class LocalSampler{
 		String sourceKey = ldm.getObject().getString("sourceKey");
 		
 		FileIOWriter writer;
-		writer = new FileIOWriter(this.objectDir + sourceKey + ".json", false);
+		writer = new FileIOWriter(this.objectDir + sourceKey + ".dat", false);
 		Document result = ldm.getObject();
 		result.remove("_id");
-		result.remove("reviewIDs");
 		result.remove("host");
+		result.remove("reviewIDs");
 		writer.write(result.toJson());
 		writer.close();
 		
 		// collect review for each user(reviewerID)
+		
 		if(userLevelSampling)
 			handleUserBuff(ldm);
 	}
@@ -140,8 +150,8 @@ public class LocalSampler{
 				reviewBuff.put(reviewerID, new ArrayList<Document>());
 			
 			review.remove("_id");
-			review.remove("reviewerID");
 			review.remove("reviewID");
+			review.remove("reviewerID");
 			reviewBuff.get(reviewerID).add(review);
 		}
 	}
@@ -150,7 +160,7 @@ public class LocalSampler{
 	private void writeUserBuff() throws IOException{
 		FileIOWriter writer;
 		
-		logger.info("reviewBuff is over " + reviewBuffSize + ", therefore writing buff data\t\t"
+		System.out.println("[WARN] reviewBuff is over " + reviewBuffSize + ", therefore write the buff data\t\t"
 				+ "currSamplingCnt: " + samplingCnt);
 
 		StringBuffer sb = new StringBuffer();
@@ -163,16 +173,16 @@ public class LocalSampler{
 		
 		sb.append("#");
 
-		String targetPath = this.rootDir + "tmp/" + reivewBuffTmpNum + ".txt";
+		String targetPath = this.rootDir + "tmp/userReviewTemp.dat";
 		FileSystem.mkdir_path(targetPath);
 		
 		writer = new FileIOWriter(targetPath, true);
 		writer.write(sb.toString());
 		writer.close();
 
-		reivewBuffTmpNum++;
 		reviewBuff.clear();
 		reviewBuff = new HashMap<String, ArrayList<Document>>();
+		
 	}
 	
 	/* User/Review Sampling */
@@ -184,34 +194,32 @@ public class LocalSampler{
 	public void samplingUser() throws IOException{
 		FileSystem.mkdir_path(this.userDir);
 		
-		for(String userReviewPath : FileSystem.readFileList(rootDir + "tmp")){
-			logger.info("user Sampling : " + userReviewPath);
+		System.out.println("[LOAD] load userReviewTemp.dat for sampling user data");
+		ArrayList<String> lines = FileIO.readEachLine(rootDir + "tmp/userReviewTemp.dat");
+		
+		ArrayList<Document> reviewDocs = new ArrayList<Document>();
+		String reviewerID = null;
+		
+		System.out.println("[INFO] sampling user start!");
+		for(int i = 0; i< lines.size(); i++){
+			String line = lines.get(i);
 			
-			ArrayList<String> lines = FileIO.readEachLine(userReviewPath);
-			
-			ArrayList<Document> reviewDocs = new ArrayList<Document>();
-			String reviewerID = null;
-			
-			for(int i = 0; i< lines.size(); i++){
-				String line = lines.get(i);
-				
-				// new user or the end of file
-				if(line.startsWith("#") || i == lines.size() - 1){
-					if(reviewDocs.size() > 0){
-						DatabaseDataModel userReviewData = new DatabaseDataModel(reviewDocs.get(0), reviewDocs);
-						if(userFiltering(userReviewData)){
-							writeUserSamplingResult(reviewDocs, reviewerID);
-						}
-						reviewDocs.clear();
+			// new user or the end of file
+			if(line.startsWith("#") || i == lines.size() - 1){
+				if(reviewDocs.size() > 0){
+					DatabaseDataModel userReviewData = new DatabaseDataModel(reviewDocs.get(0), reviewDocs);
+					if(userFiltering(userReviewData)){
+						writeUserSamplingResult(reviewDocs, reviewerID);
 					}
-					
-					reviewerID = line.substring(1);
+					reviewDocs.clear();
 				}
-				// common review line
-				else{
-					reviewDocs.add(Document.parse(line));
-				}	
+				
+				reviewerID = line.substring(1);
 			}
+			// common review line
+			else{
+				reviewDocs.add(Document.parse(line));
+			}	
 		}
 	}
 	
@@ -219,12 +227,14 @@ public class LocalSampler{
 		if(reviewDocs == null) return;
 		if(reviewDocs.size() == 0) return;
 		
-		String targetFilePath = this.userDir + reviewerID + ".json";
+		String targetFilePath = this.userDir + reviewerID + ".dat";
 		FileIOWriter writer = new FileIOWriter(targetFilePath, true);
 		
 		for(Document review : reviewDocs){
 			writer.write(review.toJson());
 		}
+
+		userReviewListWriter.write(reviewerID);
 		
 		writer.close();
 	}
