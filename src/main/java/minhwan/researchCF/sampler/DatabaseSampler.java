@@ -28,7 +28,7 @@ import minhwan.util.database.mongodb.MongoDBType;
 public class DatabaseSampler {
 	static Logger logger = Logger.getLogger(DatabaseSampler.class.getName()); 
 
-	public static String ROOT_DIR = "D:\\Research\\FM\\data\\sanf\\";
+	public static String ROOT_DIR = null;
 	
 	MongoDB restDB;
 	MongoDB reviewDB;
@@ -81,7 +81,6 @@ public class DatabaseSampler {
 	
 	private void reviewFetch(Document restaurant) throws IOException{
 		final String sourceKey = restaurant.getString("sourceKey");
-//		System.out.println(sourceKey);
 		
 		final StringBuffer sb = new StringBuffer();
 		sb.append(restaurant.toJson()).append("\n");
@@ -100,10 +99,5 @@ public class DatabaseSampler {
 		FileIOWriter fiw = new FileIOWriter(filePath, false);
 		fiw.write(sb.toString());
 		fiw.close();
-	}
-	
-	public static void main(String[] args) throws IOException{
-		DatabaseSampler sampler = new DatabaseSampler();
-		sampler.sampling();
 	}
 }

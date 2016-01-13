@@ -46,7 +46,7 @@ public class KeywordExtractTest {
 		ls.sampling(rootDir);
 		
 		KeywordExtractor ke = new KeywordExtractor("D:/Research/FM/data/sanf/sampling/");
-		ke.execute("D:/Research/FM/data/sanf/sampling/", KeywordExtractor.DATA_TYPE.REVIEW);
-		ke.execute("D:/Research/FM/data/sanf/sampling/", KeywordExtractor.DATA_TYPE.OBJECT);
+		ke.extractTermFreq("D:/Research/FM/data/sanf/sampling/", KeywordExtractor.DATA_TYPE.REVIEW);
+		ke.extractTermFreq("D:/Research/FM/data/sanf/sampling/", KeywordExtractor.DATA_TYPE.OBJECT);
 	}
 }

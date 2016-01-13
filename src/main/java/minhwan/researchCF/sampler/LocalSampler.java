@@ -6,16 +6,15 @@ package minhwan.researchCF.sampler;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.logging.Logger;
 
 import org.bson.Document;
 
-import minhwan.researchCF.sampler.filters.restaurant.ObjectReviewCountFilter;
-import minhwan.researchCF.sampler.filters.user.UserReviewCountFilter;
 import minhwan.researchCF.sampler.model.DatabaseDataModel;
 import minhwan.util.IO.FileIO;
 import minhwan.util.IO.FileIOWriter;
 import minhwan.util.IO.FileSystem;
+import minhwan.util.common.logger.LogType;
+import minhwan.util.common.logger.Logger;
 
 /**
  * @author yuminhwan
@@ -23,9 +22,7 @@ import minhwan.util.IO.FileSystem;
  * @createDate 2016. 1. 7.
  * @fileName DataLoader.java
  */
-public class LocalSampler{
-	private static Logger logger = Logger.getLogger(LocalSampler.class.getName());
-	
+public class LocalSampler{	
 	private String rootDir;
 	private String objectDir;
 	private String userDir;
@@ -53,17 +50,17 @@ public class LocalSampler{
 	
 	/* managing filter */
 	public void addObjectFilter(SamplingFilter filter){
-		System.out.println("[LOAD] add object sampling-filter: " + filter.getClass().getName());
+		Logger.log(LogType.LOAD, "add object sampling-filter: " + filter.getClass().getName());
 		objectFilters.add(filter);
 	}
 	public void addUserFilter(SamplingFilter filter){
-		System.out.println("[LOAD] user sampling-filter: " + filter.getClass().getName());
+		Logger.log(LogType.LOAD, "add object sampling-filter: " + filter.getClass().getName());
 		userFilters.add(filter);
 	}
 	
 	/* executing methods */
 	public void sampling(String rootDir) throws IOException {
-		System.out.println("[INFO] Sampling Start... <<<--- " + rootDir);
+		Logger.log(LogType.INFO, "Sampling Start... <<<--- " + rootDir);
 		
 		ArrayList<String> filePaths = 
 				FileSystem.readFileList(rootDir + "./all/");
@@ -90,7 +87,8 @@ public class LocalSampler{
 		
 		writeUserBuff();
 		
-		System.out.println("[INFO] sampling user data");
+		Logger.log(LogType.INFO, "sampling user data");
+		
 		if(userLevelSampling){
 			samplingUser();
 		}
@@ -160,9 +158,9 @@ public class LocalSampler{
 	private void writeUserBuff() throws IOException{
 		FileIOWriter writer;
 		
-		System.out.println("[WARN] reviewBuff is over " + reviewBuffSize + ", therefore write the buff data\t\t"
+		Logger.log(LogType.DEBUG, "reviewBuff is over " + reviewBuffSize + ", therefore write the buff data\t\t"
 				+ "currSamplingCnt: " + samplingCnt);
-
+		
 		StringBuffer sb = new StringBuffer();
 		
 		for(String reviewerID : reviewBuff.keySet()){
@@ -194,13 +192,14 @@ public class LocalSampler{
 	public void samplingUser() throws IOException{
 		FileSystem.mkdir_path(this.userDir);
 		
-		System.out.println("[LOAD] load userReviewTemp.dat for sampling user data");
+		Logger.log(LogType.LOAD, "load userReviewTemp.dat for sampling user data");
+		
 		ArrayList<String> lines = FileIO.readEachLine(rootDir + "tmp/userReviewTemp.dat");
 		
 		ArrayList<Document> reviewDocs = new ArrayList<Document>();
 		String reviewerID = null;
 		
-		System.out.println("[INFO] sampling user start!");
+		Logger.log(LogType.START, "sampling user start!");
 		for(int i = 0; i< lines.size(); i++){
 			String line = lines.get(i);
 			
@@ -218,6 +217,7 @@ public class LocalSampler{
 			}
 			// common review line
 			else{
+				if(line.contains("ghost user")) continue;
 				reviewDocs.add(Document.parse(line));
 			}	
 		}
@@ -258,20 +258,5 @@ public class LocalSampler{
 		}
 		
 		return true;		
-	}
-	
-	public static void main(String[] args) throws IOException{
-		String rootDir = "D:/Research/FM/data/sanf/";
-
-		LocalSampler ls = new LocalSampler(true);
-
-		// add object filters
-		ls.addObjectFilter(new ObjectReviewCountFilter(5, Integer.MAX_VALUE));
-
-		// add user filters
-		ls.addUserFilter(new UserReviewCountFilter(5, Integer.MAX_VALUE));
-		
-		ls.sampling(rootDir);
-//		ls.samplingUser("D:/Research/FM/data/sanf/sampling/users/");
 	}
 }

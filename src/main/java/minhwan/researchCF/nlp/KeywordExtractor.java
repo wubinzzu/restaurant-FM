@@ -3,12 +3,10 @@
  */
 package minhwan.researchCF.nlp;
 
-import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
-import java.util.logging.Logger;
 
 import org.bson.Document;
 
@@ -16,6 +14,8 @@ import minhwan.researchCF.sampler.model.Cleaner;
 import minhwan.util.IO.FileIO;
 import minhwan.util.IO.FileIOWriter;
 import minhwan.util.IO.FileSystem;
+import minhwan.util.common.logger.LogType;
+import minhwan.util.common.logger.Logger;
 import minhwan.util.nlp.frequency.DFCal;
 import minhwan.util.nlp.frequency.FreqDataLoader;
 import minhwan.util.nlp.frequency.TFCal;
@@ -29,10 +29,7 @@ import minhwan.util.nlp.preprocessing.stanford.StanfordPipeline;
  * @createDate 2016. 1. 7.
  * @fileName KeywordExtractor.java
  */
-public class KeywordExtractor {
-	public static Logger logger = Logger.getLogger(KeywordExtractor.class.getName());
-	private int logCnt = 0;
-	
+public class KeywordExtractor {	
 	public enum DATA_TYPE{ OBJECT, REVIEW };
 	
 	private String targetDir, inputDir;
@@ -43,6 +40,7 @@ public class KeywordExtractor {
 	private TFCal termFreqCounter;
 	private FreqDataLoader freqDataLoader;
 	
+	private int logCnt;
 	
 	public KeywordExtractor(String targetDir){
 		this.targetDir = targetDir;
@@ -56,13 +54,15 @@ public class KeywordExtractor {
 		});
 		
 		this.termFreqCounter = new TFCal(3, TFCal.TARGET.LEMMA,
-				new String[]{"NN", "VB", "CD"});
+				new String[]{"NN", "VB"});
 //		this.reviewTFcounter = new TFCal(3, TFCal.TARGET.LEMMA,
 //				new String[]{"NN", "VB", "CD"});
 		this.freqDataLoader = new FreqDataLoader();
+		
+		this.logCnt = 0;
 	}
 	
-	public void execute(String inputDir, DATA_TYPE type) throws IOException{
+	public void extractTermFreq(String inputDir, DATA_TYPE type) throws IOException{
 		this.inputDir = inputDir;
 		
 		String tfDir = null;
@@ -86,8 +86,7 @@ public class KeywordExtractor {
 		
 		for(String filePath : FileSystem.readFileList(this.inputDir)){
 			if( logCnt++ % 100 == 0)
-//				logger.info("extracting Keyword from file: " + filePath);
-				System.out.println("[INFO] Generate TF: " + filePath);
+				Logger.log(LogType.INFO, "Generate TF: " + filePath);
 			
 			switch(type){
 				case OBJECT:
@@ -96,7 +95,7 @@ public class KeywordExtractor {
 					for(String line : FileIO.readEachLine(this.targetDir + "/userList.dat"))
 						validUsers.add(line);
 					
-					String objectKey = getKey(filePath);
+					String objectKey = FileSystem.getFileName(filePath);
 					createObjectDataTF(inputDir + "/../all/" + objectKey + ".dat", validUsers);
 					break;
 				case REVIEW:
@@ -108,8 +107,9 @@ public class KeywordExtractor {
 		createDF(tfDir, dfDir);
 	}
 	
+	/* TF */
 	private void createObjectDataTF(String filePath, HashSet<String> validUsers) throws IOException{
-		String objectID = getKey(filePath);
+		String objectID = FileSystem.getFileName(filePath);
 		
 		ArrayList<String> lines = FileIO.readEachLine(filePath);
 		
@@ -132,9 +132,9 @@ public class KeywordExtractor {
 		
 		termFreqCounter.flush();
 	}
-	
+
 	public void createReviewDataTF(String filePath) throws IOException{
-		String reviewerID = getKey(filePath);
+		String reviewerID = FileSystem.getFileName(filePath);
 		
 		for(String line : FileIO.readEachLine(filePath)){
 			Document review = Document.parse(line);
@@ -156,15 +156,14 @@ public class KeywordExtractor {
 		termFreqCounter.flush();
 	}
 	
+	/* DF */
 	public void createDF(String tfDir, String targetDir) throws IOException{
-		System.out.println("[INFO] Generate DF: " + tfDir);
+		Logger.log(LogType.INFO, "Generate DF: " + tfDir);
 		
 		HashMap<String, Integer> tf;
 		
 		DFCal dfCal = new DFCal();
-		for(String filePath : FileSystem.readFileList(tfDir)){
-			String key = getKey(filePath);
-			
+		for(String filePath : FileSystem.readFileList(tfDir)){			
 			tf = freqDataLoader.load(filePath);
 			dfCal.updateDF(tf);
 		}
@@ -172,27 +171,52 @@ public class KeywordExtractor {
 		HashMap<String, Integer> df = dfCal.getCounter();
 		writeFreq(df, targetDir + "/df.dat");
 	}
-	
-	private void writeFreq(HashMap<String, Integer> freq, String targetFilePath) throws IOException{
-		FileIOWriter writer =
-				new FileIOWriter(targetFilePath, true);
 
+	private void writeFreq(HashMap<String, Integer> freq, String targetFilePath) throws IOException{
+		StringBuffer sb = new StringBuffer();
+		
 		for(String w : freq.keySet()){
-			writer.write(w + "\t" + freq.get(w));
+			sb.append(w + "\t" + freq.get(w)).append("\n");
 		}
 		
+
+		FileIOWriter writer = new FileIOWriter(targetFilePath, true);
+		writer.write(sb.toString());
 		writer.close();
 	}
-	
-	private String getKey(String filePath){
-		File f = new File(filePath);
+
+	/* extract keyword */
+	public void extractKeyword(String freqDirPath) throws NumberFormatException, IOException{
+		Logger.log(LogType.INFO, "extractKeyword : " + freqDirPath);
 		
-		return f.getName().split("\\.")[0];
+		HashMap<String, Integer> df = freqDataLoader.load(freqDirPath + "/df.dat");
+		ArrayList<String> tfFilePaths = FileSystem.readFileList(freqDirPath + "/tf/");
+		
+		FileSystem.mkdir_path(freqDirPath + "/weight/");
+		
+		for(String tfFilePath : tfFilePaths){
+			Logger.log(LogType.DEBUG, "TF data: " + tfFilePath);
+			
+			String key = FileSystem.getFileName(tfFilePath);
+			HashMap<String, Integer> tf = freqDataLoader.load(tfFilePath);
+
+			StringBuffer sb = new StringBuffer();
+			
+			for(String term : tf.keySet()){
+				sb
+				.append(term).append("\t")
+				.append(tf.get(term)).append("\t")
+				.append(df.get(term)).append("\t")
+				.append(termWeight(tf.get(term), df.get(term), tfFilePaths.size())).append("\n");
+			}
+			
+			FileIOWriter writer = new FileIOWriter(freqDirPath + "/weight/" + key + ".dat", false);
+			writer.write(sb.toString());
+			writer.close();
+		}
 	}
 	
-	public static void main(String[] args) throws IOException{
-		KeywordExtractor ke = new KeywordExtractor("D:/Research/FM/data/sanf/sampling/");
-		ke.execute("D:/Research/FM/data/sanf/sampling/", KeywordExtractor.DATA_TYPE.REVIEW);
-		ke.execute("D:/Research/FM/data/sanf/sampling/", KeywordExtractor.DATA_TYPE.OBJECT);
+	private double termWeight(int tf, int df, int size){
+		return ( (double)tf) * Math.log( ((double)size) / df) ;
 	}
 }
