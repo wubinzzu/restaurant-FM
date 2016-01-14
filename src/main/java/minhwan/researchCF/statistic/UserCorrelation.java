@@ -54,8 +54,8 @@ public class UserCorrelation {
 							correlation);
 
 					Logger.log(LogType.INFO, 
-							reviewerIDs[user1Idx] + "/" + reviewerIDs[user2Idx] + 
-							"---> " + correlation);
+							"Correlation(" + user1Idx + " -- " + user2Idx + 
+							") = " + correlation);
 				}
 			}
 			writer.close();
