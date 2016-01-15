@@ -82,9 +82,9 @@ public class SamplingExecute {
 		Logger.debugMode = true;
 		Logger.logInterval = 1000;
 		
-//		databaseSampling("D:/Research/FM/data/sanf/");
+		databaseSampling("D:/Research/FM/data/sanf-top50/");
 //		localSampling("D:/Research/FM/data/sanf/");
-		extractUserRating("D:/Research/FM/data/sanf/sampling");
+//		extractUserRating("D:/Research/FM/data/sanf/sampling");
 //		extractKeyword("D:/Research/FM/data/sanf/sampling");
 	}
 }

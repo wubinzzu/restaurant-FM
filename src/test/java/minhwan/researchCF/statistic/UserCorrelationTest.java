@@ -14,12 +14,12 @@ import org.junit.Test;
  */
 public class UserCorrelationTest {
 	
-	UserCorrelation uc;
+	UserCorrCal uc;
 	
 	@Before
 	public void setup(){
-		uc = new UserCorrelation();
-		uc.dataLoad("D:/Research/FM/data/sanf/sampling/ratings.dat");
+		uc = new UserCorrCal();
+		uc.dataLoad("D:/Research/FM/data/sanf/sampling/ratings_test.dat");
 	}
 	
 	@Test
