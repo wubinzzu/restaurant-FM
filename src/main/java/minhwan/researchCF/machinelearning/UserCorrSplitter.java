@@ -1,14 +1,15 @@
 /**
  * 
  */
-package minhwan.researchCF.statistic;
+package minhwan.researchCF.machinelearning;
 
 import java.io.IOException;
 import java.util.ArrayList;
 
 import org.apache.commons.math3.stat.correlation.PearsonsCorrelation;
+import org.bson.Document;
 
-import minhwan.researchCF.sampler.model.UserRating;
+import minhwan.researchCF.sampler.model.UserRatingModel;
 import minhwan.util.IO.FileIOWriter;
 import minhwan.util.IO.FileSystem;
 import minhwan.util.common.logger.LogType;
@@ -20,18 +21,18 @@ import minhwan.util.common.logger.Logger;
  * @createDate 2016. 1. 13.
  * @fileName UserCorrelationCalulation.java
  */
-public class UserCorrCal {
-	UserRating userRating;
+public class UserCorrSplitter {
+	UserRatingModel userRating;
 	PearsonsCorrelation corr;
 	String dataFilePath;
 	
-	public UserCorrCal(){
+	public UserCorrSplitter(){
 		Logger.logInterval = 10000;
 	}
 	
 	public void dataLoad(String dataFilePath){
 		this.dataFilePath = dataFilePath;
-		userRating = new UserRating(dataFilePath);
+		userRating = new UserRatingModel(dataFilePath);
 		corr = new PearsonsCorrelation();
 	}
 	
@@ -41,7 +42,7 @@ public class UserCorrCal {
 		String[] objectIDs = userRating.getObjectIDs();
 		
 		try {
-			FileSystem.mkdir_path(dataFilePath.replace("ratings.dat", "/correlation/"));
+			FileSystem.mkdir_path(dataFilePath.replace("ratings.dat", "/correlation-userPair/"));
 			
 			for(int user1Idx = 0; user1Idx < ratingMatrix.length; user1Idx++){
 				for(int user2Idx = user1Idx+1; user2Idx < ratingMatrix.length; user2Idx++){
@@ -64,16 +65,26 @@ public class UserCorrCal {
 						double correlation = calculate(user1, user2);
 
 						FileIOWriter writer = new FileIOWriter(dataFilePath.replace(
-								"ratings.dat", "/correlation/" + user1.size() + ".dat"), true);
+								"ratings.dat", "/correlation-userPair/" + user1.size() + ".dat"), true);
 						
-						StringBuffer sb = new StringBuffer();
 						
-						sb
-						.append(reviewerIDs[user1Idx]).append("\t")
-						.append(reviewerIDs[user2Idx]).append("\t")
-						.append(ratingObjects).append("\t")
-						.append(correlation);
-						writer.write(sb.toString());
+						Document user1Rating = new Document();
+						user1Rating.put("reviewerID", reviewerIDs[user1Idx]);
+						user1Rating.put("ratings", user1);
+						Document user2Rating = new Document();
+						user2Rating.put("reviewerID", reviewerIDs[user2Idx]);
+						user2Rating.put("ratings", user2);
+						
+						ArrayList<Document> reviewRatings = new ArrayList<Document>();
+						reviewRatings.add(user1Rating);
+						reviewRatings.add(user2Rating);
+						
+						Document f = new Document();
+						f.put("correlation", correlation);
+						f.put("ratings", reviewRatings);
+						f.put("ratingObjects", ratingObjects);
+						
+						writer.write(f.toJson());
 						writer.close();
 						
 						Logger.log(LogType.INFO, 
@@ -105,9 +116,9 @@ public class UserCorrCal {
 	}
 	
 	public static void main(String[] args){
-		UserCorrCal uc;
+		UserCorrSplitter uc;
 
-		uc = new UserCorrCal();
+		uc = new UserCorrSplitter();
 		uc.dataLoad("D:/Research/FM/data/sanf/sampling/ratings.dat");
 		
 		uc.calculateAll();

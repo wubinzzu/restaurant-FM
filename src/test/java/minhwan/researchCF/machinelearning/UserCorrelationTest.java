@@ -1,10 +1,12 @@
 /**
  * 
  */
-package minhwan.researchCF.statistic;
+package minhwan.researchCF.machinelearning;
 
 import org.junit.Before;
 import org.junit.Test;
+
+import minhwan.researchCF.machinelearning.UserCorrSplitter;
 
 /**
  * @author yuminhwan
@@ -14,16 +16,18 @@ import org.junit.Test;
  */
 public class UserCorrelationTest {
 	
-	UserCorrCal uc;
+	UserCorrSplitter uc;
 	
 	@Before
 	public void setup(){
-		uc = new UserCorrCal();
+		uc = new UserCorrSplitter();
 		uc.dataLoad("D:/Research/FM/data/sanf/sampling/ratings_test.dat");
 	}
 	
 	@Test
 	public void test(){
 		uc.calculateAll();
+		
+		
 	}
 }

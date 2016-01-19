@@ -18,13 +18,13 @@ import minhwan.util.common.model.KeyValue;
  * @createDate 2016. 1. 13.
  * @fileName UserRating.java
  */
-public class UserRating {
+public class UserRatingModel {
 	HashMap<String, ArrayList<KeyValue>> ratings;
 	HashMap<String, Integer> objectIdxMap;
 	
 	String[] reviewrIDs, objectIDs;
 	
-	public UserRating(String filePath){
+	public UserRatingModel(String filePath){
 		objectIdxMap = new HashMap<String, Integer>();
 		ratings   = new HashMap<String, ArrayList<KeyValue>>();
 		

@@ -21,7 +21,7 @@ public class UserRatingTest {
 	@Test
 	public void test(){
 		String dataPath = "D:/Research/FM/data/sanf/sampling/ratings.dat";
-		UserRating ur = new UserRating(dataPath);
+		UserRatingModel ur = new UserRatingModel(dataPath);
 		
 		double[][] matrix = ur.convert2matrix();
 		String[] reviewrIDs = ur.getReviewerIDs();
