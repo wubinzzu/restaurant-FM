@@ -27,7 +27,6 @@ public class UserCorrSplitter {
 	String dataFilePath;
 	
 	public UserCorrSplitter(){
-		Logger.logInterval = 10000;
 	}
 	
 	public void dataLoad(String dataFilePath){
@@ -116,10 +115,11 @@ public class UserCorrSplitter {
 	}
 	
 	public static void main(String[] args){
+		Logger.logInterval = 10000;
 		UserCorrSplitter uc;
 
 		uc = new UserCorrSplitter();
-		uc.dataLoad("D:/Research/FM/data/sanf/sampling/ratings.dat");
+		uc.dataLoad("D:/Research/FM/data/sanf-top500/sampling/ratings.dat");
 		
 		uc.calculateAll();
 	}

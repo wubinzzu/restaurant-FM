@@ -50,11 +50,11 @@ public class LocalSampler{
 	
 	/* managing filter */
 	public void addObjectFilter(SamplingFilter filter){
-		Logger.log(LogType.LOAD, "add object sampling-filter: " + filter.getClass().getName());
+		Logger.log(LogType.LOAD, "add object sampling-filter: " + filter.getClass().getSimpleName());
 		objectFilters.add(filter);
 	}
 	public void addUserFilter(SamplingFilter filter){
-		Logger.log(LogType.LOAD, "add object sampling-filter: " + filter.getClass().getName());
+		Logger.log(LogType.LOAD, "add object sampling-filter: " + filter.getClass().getSimpleName());
 		userFilters.add(filter);
 	}
 	
@@ -81,14 +81,11 @@ public class LocalSampler{
 			
 			if(objectFiltering(ldm))	writeSamplingResult(ldm );
 			
-			if(samplingCnt++ % 1000 == 0)
-				System.out.printf("[INFO] %d/%d %s\n", samplingCnt, filePaths.size(), filePath);
+			Logger.log(LogType.INFO, samplingCnt + "/" + filePaths.size() + "\t" +  filePath);
 		}
 		
 		writeUserBuff();
-		
-		Logger.log(LogType.INFO, "sampling user data");
-		
+				
 		if(userLevelSampling){
 			samplingUser();
 		}

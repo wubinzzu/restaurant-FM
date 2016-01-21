@@ -1,10 +1,13 @@
 import java.io.IOException;
+import java.util.HashMap;
 
 import org.bson.Document;
 
+import minhwan.researchCF.machinelearning.UserCorrSplitter;
 import minhwan.researchCF.nlp.KeywordExtractor;
 import minhwan.researchCF.sampler.DatabaseSampler;
 import minhwan.researchCF.sampler.LocalSampler;
+import minhwan.researchCF.sampler.SamplingFilter;
 import minhwan.researchCF.sampler.filters.restaurant.ObjectReviewCountFilter;
 import minhwan.researchCF.sampler.filters.user.UserReviewCountFilter;
 import minhwan.util.IO.FileIO;
@@ -22,20 +25,35 @@ import minhwan.util.common.logger.Logger;
 public class SamplingExecute {
 	public static void databaseSampling(String writingDir) throws IOException{				
 		/** data base sampling **/
-		DatabaseSampler.ROOT_DIR = writingDir;
+		DatabaseSampler.ROOT_DIR = writingDir + "/all/";
 		DatabaseSampler ds = new DatabaseSampler();
-		ds.sampling();
+
+		HashMap<String, Object> queryMap = new HashMap<String, Object>();
+		queryMap.put("address.addressLocality", "San Francisco");
+		
+		ds.sampling(queryMap);
 	}
 	
-	public static void localSampling(String rootDir) throws IOException{
+	public static void databaseSamplingTopN(String writingDir, int N) throws IOException{				
+		/** data base sampling **/
+		DatabaseSampler.ROOT_DIR = writingDir + "/all/";
+		DatabaseSampler ds = new DatabaseSampler();
+
+		HashMap<String, Object> queryMap = new HashMap<String, Object>();
+		queryMap.put("address.addressLocality", "San Francisco");
+		
+		ds.sampling(queryMap, N);
+	}
+	
+	public static void localSampling(String rootDir, 
+			SamplingFilter[] objectFilters, SamplingFilter[] userFilters) throws IOException{
 		/** local sampling **/
 		LocalSampler ls = new LocalSampler(true);
 
 		// add object filters
-		ls.addObjectFilter(new ObjectReviewCountFilter(5, Integer.MAX_VALUE));
-
+		for(SamplingFilter filter : objectFilters)	ls.addObjectFilter(filter);
 		// add user filters
-		ls.addUserFilter(new UserReviewCountFilter(5, Integer.MAX_VALUE));
+		for(SamplingFilter filter : userFilters)	ls.addUserFilter(filter);
 		
 		ls.sampling(rootDir);
 //		ls.samplingUser("D:/Research/FM/data/sanf/sampling/users/");
@@ -78,13 +96,48 @@ public class SamplingExecute {
 		ke.extractKeyword(rootDir + "/freq/objects");
 	}
 	
+	public static void splitUserCorr(String filePath){
+		UserCorrSplitter uc;
+
+		uc = new UserCorrSplitter();
+		uc.dataLoad(filePath);
+		
+		uc.calculateAll();
+	}
+	
 	public static void main(String[] args) throws IOException{
 		Logger.debugMode = true;
-		Logger.logInterval = 1000;
+		Logger.logInterval = 10;
 		
-		databaseSampling("D:/Research/FM/data/sanf-top50/");
-//		localSampling("D:/Research/FM/data/sanf/");
-//		extractUserRating("D:/Research/FM/data/sanf/sampling");
-//		extractKeyword("D:/Research/FM/data/sanf/sampling");
+		String rootDir = "D:/Research/FM/data/sanf-top500/";
+
+		//databaseSampling(rootDir);
+		
+		/*database -> local dump
+		 *  @Param2 : top N restaurant
+		 */
+		databaseSamplingTopN(rootDir, 500);
+		
+		/*local dump -> selected data
+		 *  @Param2 : restaurant sampling filter 
+		 *  @Param3 : user sampling filter
+		 */
+		SamplingFilter[] objectFilter = new SamplingFilter[]{
+				new ObjectReviewCountFilter(50, Integer.MAX_VALUE)	
+		};
+		SamplingFilter[] userFilter = new SamplingFilter[]{
+				new UserReviewCountFilter(10, Integer.MAX_VALUE)	
+		};
+		localSampling(rootDir, objectFilter, userFilter);
+		
+		/*selected data -> user rating data
+		 */
+		extractUserRating(rootDir + "/sampling");
+		/*selected data -> user keyword
+		 */
+		extractKeyword(rootDir + "/sampling");
+		
+		Logger.logInterval = 100;
+		splitUserCorr(rootDir + "/sampling/ratings.dat");
 	}
 }

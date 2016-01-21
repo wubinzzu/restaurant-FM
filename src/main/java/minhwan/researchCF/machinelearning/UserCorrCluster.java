@@ -19,11 +19,10 @@ import minhwan.util.common.logger.LogType;
 import minhwan.util.common.logger.Logger;
 import minhwan.util.machinelearning.clustering.ClusteringDataset;
 import minhwan.util.machinelearning.clustering.algorithm.hierarchical.HierarchicalClustering;
-import minhwan.util.machinelearning.clustering.algorithm.kmeans.KMeansClustering;
 import minhwan.util.machinelearning.clustering.linkage.CentroidLinkage;
 import minhwan.util.machinelearning.model.FeatureVector;
 import minhwan.util.math.distance.CorrelationDistance;
-import minhwan.util.math.distance.EuclideDistance;
+import minhwan.util.math.distance.DistanceMetric;
 
 /**
  * @author yuminhwan
@@ -33,14 +32,13 @@ import minhwan.util.math.distance.EuclideDistance;
  */
 public class UserCorrCluster {
 	private ClusteringDataset dataset;
-	private KMeansClustering kmeans;
 	private HierarchicalClustering hierarchical;
 
 	ArrayList<String> ratingObjectLists;
 	
 	public UserCorrCluster() throws IOException{
-		this.kmeans = new KMeansClustering(10, new CorrelationDistance());
-		this.hierarchical = new HierarchicalClustering(new CentroidLinkage(new EuclideDistance()));
+		DistanceMetric distanceMetric =  new CorrelationDistance();
+		this.hierarchical = new HierarchicalClustering(new CentroidLinkage(distanceMetric));
 	}
 	
 	// User rating piar (.json) -> data structure
@@ -125,17 +123,47 @@ public class UserCorrCluster {
 		fiw.close();
 	}
 	
+	/**
+	 * @return the dataset
+	 */
+	public ClusteringDataset getDataset() {
+		return dataset;
+	}
+
+	/**
+	 * @param dataset the dataset to set
+	 */
+	public void setDataset(ClusteringDataset dataset) {
+		this.dataset = dataset;
+	}
+
+
+
+	/**
+	 * @return the ratingObjectLists
+	 */
+	public ArrayList<String> getRatingObjectLists() {
+		return ratingObjectLists;
+	}
+
+	/**
+	 * @param ratingObjectLists the ratingObjectLists to set
+	 */
+	public void setRatingObjectLists(ArrayList<String> ratingObjectLists) {
+		this.ratingObjectLists = ratingObjectLists;
+	}
+
 	public static void main(String[] args) throws IOException{
-		Logger.debugMode = true;
-		Logger.logInterval = 40;
+		Logger.debugMode = false;
+		Logger.logInterval = 1;
 		
-		int fileNum = 37;
+		int fileNum = 102;
 		String ratingFilePath = "D:/Research/FM/data/sanf/sampling/correlation-userPair/" + fileNum + ".dat";
 		UserCorrCluster ucc = new UserCorrCluster();
 
 //		ucc.loadData(ratingFilePath, true);
 		
 		ucc.loadData(ratingFilePath, false);
-		ucc.clustering("C:/Users/yuminhwan/workspace/minhwan-util/python/dendrogram/" + fileNum + ".dat");
+		ucc.clustering("C:/Users/yuminhwan/workspace/minhwan-util/python/dendrogram/" + fileNum + ".dat");		
 	}
 }

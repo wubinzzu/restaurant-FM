@@ -195,7 +195,7 @@ public class KeywordExtractor {
 		FileSystem.mkdir_path(freqDirPath + "/weight/");
 		
 		for(String tfFilePath : tfFilePaths){
-			Logger.log(LogType.DEBUG, "TF data: " + tfFilePath);
+			Logger.log(LogType.INFO, "TF data: " + tfFilePath);
 			
 			String key = FileSystem.getFileName(tfFilePath);
 			HashMap<String, Integer> tf = freqDataLoader.load(tfFilePath);
