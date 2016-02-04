@@ -22,6 +22,7 @@ import minhwan.util.machinelearning.clustering.algorithm.hierarchical.Hierarchic
 import minhwan.util.machinelearning.clustering.linkage.CentroidLinkage;
 import minhwan.util.machinelearning.model.FeatureVector;
 import minhwan.util.math.distance.CorrelationDistance;
+import minhwan.util.math.distance.CorrelationStrictDistance;
 import minhwan.util.math.distance.DistanceMetric;
 
 /**
@@ -37,8 +38,9 @@ public class UserCorrCluster {
 	ArrayList<String> ratingObjectLists;
 	
 	public UserCorrCluster() throws IOException{
-		DistanceMetric distanceMetric =  new CorrelationDistance();
-		this.hierarchical = new HierarchicalClustering(new CentroidLinkage(distanceMetric));
+		DistanceMetric correlationDist =  new CorrelationDistance();
+		DistanceMetric correlationStrcitDist = new CorrelationStrictDistance();
+		this.hierarchical = new HierarchicalClustering(new CentroidLinkage(correlationDist));
 	}
 	
 	// User rating piar (.json) -> data structure
@@ -155,10 +157,10 @@ public class UserCorrCluster {
 
 	public static void main(String[] args) throws IOException{
 		Logger.debugMode = false;
-		Logger.logInterval = 1;
+		Logger.logInterval = 10;
 		
-		int fileNum = 102;
-		String ratingFilePath = "D:/Research/FM/data/sanf/sampling/correlation-userPair/" + fileNum + ".dat";
+		int fileNum = 80;
+		String ratingFilePath = "D:/Research/FM/data/sanf-top500/sampling/correlation-userPair/" + fileNum + ".dat";
 		UserCorrCluster ucc = new UserCorrCluster();
 
 //		ucc.loadData(ratingFilePath, true);
