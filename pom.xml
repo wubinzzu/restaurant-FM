@@ -13,10 +13,11 @@
 		<version>3.0.3</version>
 	</dependency>
 	
+	
 	<dependency>
 		<groupId>minhwan</groupId>
 		<artifactId>minhwan-util</artifactId>
-		<version>0.0.1-SNAPSHOT</version>
+		<version>0.0.1</version>
 	</dependency>
 	
 	
